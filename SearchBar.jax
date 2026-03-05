@@ -1,0 +1,99 @@
+import React, { useState } from "react";
+import { Search, LocateFixed, Building2, Loader2, MapPin } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+
+export default function SearchBar({ onSearch, onSearchByCoords, isLoading }) {
+  const [city, setCity] = useState("");
+  const [bank, setBank] = useState("");
+  const [locating, setLocating] = useState(false);
+
+  const handleSearch = () => {
+    if (!city.trim() || !bank.trim()) {
+      toast.error("Please enter both a city and a bank name.");
+      return;
+    }
+    onSearch(city.trim(), bank.trim());
+  };
+
+  const handleUseLocation = () => {
+    if (!bank.trim()) {
+      toast.error("Please enter a bank name first.");
+      return;
+    }
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported by your browser.");
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocating(false);
+        onSearchByCoords(pos.coords.latitude, pos.coords.longitude, bank.trim());
+      },
+      () => {
+        setLocating(false);
+        toast.error("Could not get your location. Please allow location access.");
+      }
+    );
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") handleSearch();
+  };
+
+  const busy = isLoading || locating;
+
+  return (
+    <div className="w-full max-w-3xl mx-auto">
+      <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.08)] border border-white/40 p-2 sm:p-3">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+
+          {/* City input */}
+          <div className="relative flex-1">
+            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Input
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="City or area (e.g., London)"
+              className="pl-10 h-12 border-slate-200/80 rounded-xl bg-slate-50/50 focus:bg-white transition-colors text-sm"
+            />
+          </div>
+
+          {/* Bank input */}
+          <div className="relative flex-1">
+            <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Input
+              value={bank}
+              onChange={(e) => setBank(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Bank name (e.g., HSBC)"
+              className="pl-10 h-12 border-slate-200/80 rounded-xl bg-slate-50/50 focus:bg-white transition-colors text-sm"
+            />
+          </div>
+
+          {/* Search button */}
+          <Button
+            onClick={handleSearch}
+            disabled={busy || !city.trim() || !bank.trim()}
+            className="h-12 px-5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 transition-all font-medium"
+          >
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Search className="w-4 h-4 mr-2" />Search</>}
+          </Button>
+
+          {/* Use My Location button */}
+          <Button
+            onClick={handleUseLocation}
+            disabled={busy || !bank.trim()}
+            variant="outline"
+            className="h-12 px-4 rounded-xl border-slate-200 hover:bg-blue-50 hover:border-blue-300 text-slate-600 font-medium whitespace-nowrap"
+          >
+            {locating ? <Loader2 className="w-4 h-4 animate-spin" /> : <LocateFixed className="w-4 h-4" />}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
